@@ -9,6 +9,7 @@
 'use strict';
 
 // Do this as the first thing so that any code reading it knows the right env.
+// 设置当前的BABEL_ENV 与 NODE_ENV 环境变量
 process.env.BABEL_ENV = 'development';
 process.env.NODE_ENV = 'development';
 

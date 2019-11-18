@@ -49,6 +49,8 @@ const spawn = require('cross-spawn');
 const tmp = require('tmp');
 const unpack = require('tar-pack').unpack;
 const url = require('url');
+
+// 是用于校验工程的名字的包
 const validateProjectName = require('validate-npm-package-name');
 
 const packageJson = require('./package.json');
@@ -63,6 +65,7 @@ const errorLogFilePatterns = [
 
 let projectName;
 
+// 生成命令相关的参数
 const program = new commander.Command(packageJson.name)
   .version(packageJson.version)
   .arguments('<project-directory>')
@@ -153,6 +156,7 @@ const program = new commander.Command(packageJson.name)
     console.log();
   })
   .parse(process.argv);
+// 对 process.argv 进行解析
 
 if (program.info) {
   console.log(chalk.bold('\nEnvironment Info:'));
@@ -235,11 +239,11 @@ function createApp(
     version = 'react-scripts@0.9.x';
   }
 
-  const root = path.resolve(name);
-  const appName = path.basename(root);
+  const root = path.resolve(name); // 解析全路径,
+  const appName = path.basename(root); // 获取appName 就是project name
 
-  checkAppName(appName);
-  fs.ensureDirSync(name);
+  checkAppName(appName); // 因为要建立npm的package，有package.json
+  fs.ensureDirSync(name); // 创建文件夹
   if (!isSafeToCreateProjectIn(root, name)) {
     process.exit(1);
   }
@@ -251,21 +255,21 @@ function createApp(
     name: appName,
     version: '0.1.0',
     private: true,
-  };
+  }; // 基本要建立 packageJson
   fs.writeFileSync(
     path.join(root, 'package.json'),
     JSON.stringify(packageJson, null, 2) + os.EOL
-  );
+  ); //生成检点的package.json
 
-  const useYarn = useNpm ? false : shouldUseYarn();
-  const originalDirectory = process.cwd();
-  process.chdir(root);
+  const useYarn = useNpm ? false : shouldUseYarn(); //
+  const originalDirectory = process.cwd(); //运行命令时候所在的目录
+  process.chdir(root); //切换到root目录夹下
   if (!useYarn && !checkThatNpmCanReadCwd()) {
     process.exit(1);
   }
 
   if (!useYarn) {
-    const npmInfo = checkNpmVersion();
+    const npmInfo = checkNpmVersion(); // 检查NPM的Version,用于先前版本兼容相关信息
     if (!npmInfo.hasMinNpm) {
       if (npmInfo.npmVersion) {
         console.log(
@@ -338,7 +342,7 @@ function createApp(
     template,
     useYarn,
     usePnp
-  );
+  ); // 调用run方法
 }
 
 function shouldUseYarn() {
@@ -411,7 +415,7 @@ function install(root, useYarn, usePnp, dependencies, verbose, isOnline) {
     });
   });
 }
-
+//执行工程创建的核心方法
 function run(
   root,
   appName,
@@ -426,7 +430,9 @@ function run(
     getInstallPackage(version, originalDirectory),
     getTemplateInstallPackage(template, originalDirectory),
   ]).then(([packageToInstall, templateToInstall]) => {
-    const allDependencies = ['react', 'react-dom', packageToInstall];
+    // packageToInstall: react-scripts
+    // templateToInstall: cra-template
+    const allDependencies = ['react', 'react-dom', packageToInstall]; // 将Dependencies 进行组装
 
     console.log('Installing packages. This might take a couple of minutes.');
 
@@ -453,7 +459,7 @@ function run(
         if (!semver.valid(packageVersion)) {
           packageVersion = templatesVersionMinimum;
         }
-
+        // 确定要安装包的版本号
         // Only support templates when used alongside new react-scripts versions.
         const supportsTemplates = semver.gte(
           packageVersion,
@@ -514,6 +520,10 @@ function run(
 
         const nodeArgs = fs.existsSync(pnpPath) ? ['--require', pnpPath] : [];
 
+        // 调用执行NodeScript 的函数
+        // 参数1： 传递执行的路径与参数值
+        // 参数2: 额外的data,依次[生成文件的根目录，应用名，执行命令时的目录，模板文件名]
+        // 参数3: 要执行的源码内容，执行 react-script/scripts/init.js 代码
         await executeNodeScript(
           {
             cwd: process.cwd(),
@@ -827,6 +837,7 @@ function checkNodeVersion(packageName) {
 }
 
 function checkAppName(appName) {
+  // 校验工程名
   const validationResult = validateProjectName(appName);
   if (!validationResult.validForNewPackages) {
     console.error(
@@ -1065,6 +1076,13 @@ function checkIfOnline(useYarn) {
 
 function executeNodeScript({ cwd, args }, data, source) {
   return new Promise((resolve, reject) => {
+    //spawn
+    /*
+     * node
+     * var init = require('react-scripts/scripts/init.js');
+     * init.apply(null, JSON.parse(process.argv[1]));
+     * args: [...args, '-e', source, '--',[root,appName,null,originalPath, template] ]
+     * */
     const child = spawn(
       process.execPath,
       [...args, '-e', source, '--', JSON.stringify(data)],

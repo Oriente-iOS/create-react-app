@@ -82,6 +82,7 @@ module.exports = function(
   originalDirectory,
   templateName
 ) {
+  // 将appPath 下的package.json 文件读入并解析
   const appPackage = require(path.join(appPath, 'package.json'));
   const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
@@ -100,6 +101,8 @@ module.exports = function(
     return;
   }
 
+  // 解析并且读取到template的路径
+  // 针对于react-native 需要定义template 的格式
   const templatePath = path.join(
     require.resolve(templateName, { paths: [appPath] }),
     '..'
@@ -109,6 +112,10 @@ module.exports = function(
   appPackage.dependencies = appPackage.dependencies || {};
 
   // Setup the script rules
+  // 生成的 npm 的内容是与react-scripts 这样的命令相关的
+  // 如果我们自己进行bulb-native 开发的化，我们也需要发布自己的打包工具
+  // 此处可以参考react-native 的cli工具
+  // 会涉及到开发 react-native 补充代码的webpack-plugin
   appPackage.scripts = {
     start: 'react-scripts start',
     build: 'react-scripts build',
